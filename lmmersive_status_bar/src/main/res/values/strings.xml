@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">lmmersive_status_bar</string>
+    <string name="no">no</string>
+    <string name="message">消息</string>
+</resources>

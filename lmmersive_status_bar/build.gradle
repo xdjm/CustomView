@@ -20,9 +20,9 @@ android {
 }
 
 dependencies {
-    compile project (':mylibrary')
     compile 'com.android.support:appcompat-v7:25.3.0'
     compile 'com.android.support.constraint:constraint-layout:1.0.0-beta4'
     compile 'de.hdodenhof:circleimageview:2.1.0'
     compile 'com.android.support:recyclerview-v7:25.3.0'
+    compile 'com.github.CymChad:BaseRecyclerViewAdapterHelper:2.9.18'
 }

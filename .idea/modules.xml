@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/CustomView.iml" filepath="$PROJECT_DIR$/CustomView.iml" />
+      <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/lmmersive_status_bar/lmmersive_status_bar.iml" filepath="$PROJECT_DIR$/lmmersive_status_bar/lmmersive_status_bar.iml" />
+      <module fileurl="file://$PROJECT_DIR$/logingayhubdemo/logingayhubdemo.iml" filepath="$PROJECT_DIR$/logingayhubdemo/logingayhubdemo.iml" />
+      <module fileurl="file://$PROJECT_DIR$/mylibrary/mylibrary.iml" filepath="$PROJECT_DIR$/mylibrary/mylibrary.iml" />
+    </modules>
+  </component>
+</project>

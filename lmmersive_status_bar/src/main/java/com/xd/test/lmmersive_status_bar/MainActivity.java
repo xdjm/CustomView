@@ -11,7 +11,6 @@ import java.lang.reflect.Field;
 
 public class MainActivity extends Activity {
     private View positionView;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

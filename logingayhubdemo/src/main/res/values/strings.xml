@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">LoginGayHubDemo</string>
+    <string name="username_or_email">Username or email</string>
+    <string name="sign_in_to_github">Sign in to GitHub</string>
+</resources>

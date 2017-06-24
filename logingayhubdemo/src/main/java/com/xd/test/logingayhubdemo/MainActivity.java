@@ -1,16 +1,16 @@
 package com.xd.test.logingayhubdemo;
-
+import android.app.ProgressDialog;
+import android.content.Context;
 import android.support.design.widget.Snackbar;
 import android.support.design.widget.TextInputLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.webkit.WebView;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.TextView;
 
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
@@ -20,15 +20,22 @@ import org.jsoup.nodes.Element;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.Callable;
+
+import rx.Observable;
+import rx.Observer;
+import rx.Subscription;
+import rx.android.schedulers.AndroidSchedulers;
+import rx.schedulers.Schedulers;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener{
-    private TextInputLayout textInputLayout_user,textInputLayout_password;
     private EditText editText_user,editText_password;
     private Button button;
-    private TextView webView;
-    private static String LOGIN_URL = "https://github.com/login";
-    private static String USER_AGENT = "User-Agent";
-    private static String USER_AGENT_VALUE = "Mozilla/5.0 (Linux; Android 6.0.1; MI 4LTE Build/MMB29M; wv)";
+    private WebView webView;
+    private Subscription subscription;
+    ProgressDialog progressDialog;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -38,23 +45,29 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void init() {
-        textInputLayout_user = (TextInputLayout)findViewById(R.id.username);
-        textInputLayout_password = (TextInputLayout)findViewById(R.id.password);
+        TextInputLayout textInputLayout_user = (TextInputLayout) findViewById(R.id.username);
+        TextInputLayout textInputLayout_password = (TextInputLayout) findViewById(R.id.password);
         editText_user = textInputLayout_user.getEditText();
         editText_password =  textInputLayout_password.getEditText();
+        editText_user.setCursorVisible(false);
+        editText_password.setCursorVisible(false);
         button = (Button)findViewById(R.id.button);
         button.setOnClickListener(this);
-        webView = (TextView) findViewById(R.id.web);
+        webView = (WebView) findViewById(R.id.web);
     }
 
-    private  void simulateLogin(String bluetata, String password01234) throws Exception{
+    private  String[] simulateLogin(String bluetata, String password01234) throws Exception{
         /*
          * 第一次请求
          * grab login form page first
          * 获取登陆提交的表单信息，及修改其提交data数据（login，password）
          */
         // get the response, which we will post to the action URL(rs.cookies())
+        String loginfo = null;
+        String LOGIN_URL = "https://github.com/login";
         Connection con = Jsoup.connect(LOGIN_URL);  // 获取connection
+        String USER_AGENT = "User-Agent";
+        String USER_AGENT_VALUE = "Mozilla/5.0 (Linux; Android 6.0.1; MI 4LTE Build/MMB29M; wv)";
         con.header(USER_AGENT, USER_AGENT_VALUE);   // 配置模拟浏览器
         Connection.Response rs = con.execute();                // 获取响应
         Document d1 = Jsoup.parse(rs.body());       // 转换为Dom树
@@ -84,25 +97,19 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         Connection.Response login = con2.ignoreContentType(true).followRedirects(true).method(Connection.Method.POST).data(datas).cookies(rs.cookies()).execute();
         // 打印，登陆成功后的信息
         // parse the document from response
-
-        Log.v("info",login.statusMessage());
-        webView.setText(login.body());
-        // 登陆成功后的cookie信息，可以保存到本地，以后登陆时，只需一次登陆即可
         Map<String, String> map = login.cookies();
         for (String s : map.keySet()) {
-            Log.v("yjm",s + " : " + map.get(s));
+            if (Objects.equals(s, "user_session"))
+                loginfo = map.get(s);
         }
+        return new String[]{login.body(),loginfo};
     }
 
-    /**
-     * Called when a view has been clicked.
-     *
-     * @param v The view that was clicked.
-     */
     @Override
     public void onClick(View v) {
         switch (v.getId()){
             case R.id.button:
+                ((InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(this.getCurrentFocus().getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
                 try {
                     login();
                 } catch (Exception e) {
@@ -115,15 +122,47 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private void login() throws Exception{
         if(TextUtils.isEmpty(editText_user.getText().toString())||TextUtils.isEmpty(editText_password.getText().toString()))
             Snackbar.make(button,"请输入用户名和密码",Snackbar.LENGTH_SHORT).show();
-        else new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    simulateLogin(editText_user.getText().toString(),editText_password.getText().toString());
-                } catch (Exception e) {
-                    e.printStackTrace();
+        else {
+            progressDialog = new ProgressDialog(this);
+            progressDialog.setMessage("正在登录");
+            progressDialog.setCanceledOnTouchOutside(false);
+            progressDialog.show();
+            Observable<String[]> observable = Observable.fromCallable(new Callable<String[]>() {
+                @Override
+                public String[] call() throws Exception {
+
+                    return simulateLogin(editText_user.getText().toString(), editText_password.getText().toString());
                 }
-            }
-        }).start();
+            });
+            subscription=observable.subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(new Observer<String[]>() {
+                        @Override
+                        public void onCompleted() {
+                            progressDialog.dismiss();
+
+                        }
+
+                        @Override
+                        public void onError(Throwable throwable) {
+
+                        }
+
+                        @Override
+                        public void onNext(String[] s) {
+                            webView.loadData(s[0],"text/html; charset=UTF-8",null);
+                            if(!s[1].isEmpty())
+                                Snackbar.make(button,"欢迎来到全球最大同性交友社区~",Snackbar.LENGTH_LONG).show();
+                            else
+                                Snackbar.make(button,"登录失败",Snackbar.LENGTH_SHORT).show();
+                        }
+                    });
+        }
+    }
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if(subscription!=null&&!subscription.isUnsubscribed())
+            subscription.unsubscribe();
     }
 }
